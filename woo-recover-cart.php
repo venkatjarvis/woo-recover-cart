@@ -14,19 +14,31 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		);
 		register_post_type( 'woo_cwd_cart',
 			array(
-				'labels'=>$labels,
-				'public' => true,
-				'supports'      => array('title'),				
-				'show_in_menu'	=>	true,
-				'has_archive' => true,
-				'capabilities' => array('create_posts' => false),
-				'map_meta_cap' => true,
-				'rewrite' => false
+				'labels' => $labels,
+                'supports' => array('title'),
+                'hierarchical' => false,
+                'public' => false,
+                'show_ui' => true,
+                'show_in_menu' => false,
+                'exclude_from_search' => true,
+                'capability_type' => 'post',
+                'capabilities'       => array( 'create_posts' => false ),
+                'map_meta_cap'       => true
 			)
 		);
 	}
-	// Hooking up our function to theme setup
 	add_action( 'init', 'create_woo_cwd_cart_posttype' );
+	add_filter('post_row_actions','my_action_row', 10, 2);
+	function my_action_row($actions, $post){
+	    if ($post->post_type =="woo_cwd_cart"){
+	    	unset($actions['trash']);
+	    	unset($actions['inline hide-if-no-js']);
+	    	unset($actions['view']);
+	    	unset($actions['edit']);
+	    	$actions['cart_view']='<a href="post.php?post=' . $post->ID . '&action=edit">View</a>';	        
+	    }
+	    return $actions;
+	}
 	add_action('admin_head', 'wpds_custom_admin_post_css');
 	function wpds_custom_admin_post_css() {
 	    global $post_type;
@@ -52,7 +64,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			            <th align="left">Email sent:</th>
 			            <td>Not sent</td>
 			        </tr>
-
 			        <tr>
 			            <th align="left">Email action:</th>
 			            <td><input type="button" id="sendemail" class="button" value="Send email" data-id="<?php echo $post->ID; ?>" wtx-context="471E8A0B-0553-4E67-BF85-F3FA9DD421DF"></td>
@@ -72,6 +83,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		<style>
 			.abandoned{
 				background: red;
+				text-transform: uppercase;
 			}
 		</style>
 		<div>
@@ -240,13 +252,50 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 						</tr>
 					</tfoot>
 					<tbody>
-						<?php						
-
+						<?php
+							$args = array('post_type' => 'woo_cwd_cart');
+							$the_query = new WP_Query( $args ); 
+							if ( $the_query->have_posts() ) : 
+								while ( $the_query->have_posts() ) : $the_query->the_post(); 
+								?>
+									<tr>
+										<td>
+											<?php the_title(); ?>
+											<div class="row-actions">
+												<span class="cart_view">
+													<a href="post.php?post=<?php echo get_the_ID(); ?>&action=edit">View</a>
+												</span>
+											</div>
+										</td>
+										<td>
+											<?php echo get_post_meta(get_the_ID(),'visitor_email',true); ?>
+										</td>
+										<td>
+											<?php echo get_post_meta(get_the_ID(),'cart_subtotal',true); ?>
+										</td>
+										<td>
+											<?php echo get_post_meta(get_the_ID(),'cart_status',true); ?>
+										</td>
+										<td>
+											<?php echo get_post_meta(get_the_ID(),'cart_email_sent',true); ?>
+										</td>
+										<td>
+											<?php echo get_post_meta(get_the_ID(),'cart_last_update',true); ?>
+										</td>
+										<td>
+											<input type="button" class="button action" value="Send email" data-id="<?php echo get_the_ID(); ?>">
+										</td>
+									</tr>
+									<?php endwhile; ?>
+									<?php wp_reset_postdata(); ?>
+								<?php else : ?>
+									<tr><td colspan="7">No items found.</td></tr>
+							<?php endif;
 						?>
 					</tbody>
 				</table>
 			</div>
-			<?php						
+			<?php
 		}
 		else if($tab == 'email'){
 			if($_POST){
@@ -307,13 +356,13 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			<?php
 		}
 		else{
-			if($_POST){				
+			if($_POST){
 				if(isset($_POST['woo_cwd_cart_enable'])){
 					update_option( "woo_cwd_cart_enable", $_POST['woo_cwd_cart_enable'], $autoload );					
 				}
 				if(!isset($_POST['woo_cwd_cart_enable'])){
 					update_option( "woo_cwd_cart_enable", "off", $autoload );
-				}				
+				}
 				if(isset($_POST['woo_cwd_cart_cut_off_time'])){
 					update_option( "woo_cwd_cart_cut_off_time", $_POST['woo_cwd_cart_cut_off_time'], $autoload );
 				}
@@ -350,6 +399,24 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		<?php
 	}
 	add_action('admin_menu', 'woo_cwd_recover_cart_menu');
+	add_action('woocommerce_cart_updated','woo_cwd_cart_update');
+	function woo_cwd_cart_update(){
+		if(is_user_logged_in()){
+			$user_id      = get_current_user_id();
+            $user_details = get_userdata($user_id);
+            $user_email   = $user_details->user_email;            
+            $post = array(
+                'post_content' => '',
+                'post_status'  => 'publish',
+                'post_title'   => $user_details->display_name,
+                'post_type'    => 'woo_cwd_cart'
+            );
+            $post_id = wp_insert_post($post);
+            //update_post_meta( $post_id, '_user_id', $user_id);
+            update_post_meta( $post_id, 'visitor_email', $user_email);
+            update_post_meta( $post_id, 'cart_email_sent', 'Not sent');
+		}
+	}
 }
 else {
 	?>
