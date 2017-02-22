@@ -51,7 +51,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 	}
 	add_action( 'admin_menu', 'remove_woo_cwd_cart_publish_box' );
 	function custom_woo_cwd_cart_action_meta_boxes() {
-	    add_meta_box( 'woo_cwd_cart_action', __( 'Cart Action', 'textdomain' ), 'woo_cwd_cart_action_display_callback', 'woo_cwd_cart','normal','high' );
+	    add_meta_box( 'woo_cwd_cart_action', __( 'Cart Action', 'textdomain' ), 'woo_cwd_cart_action_display_callback', 'woo_cwd_cart','side','high' );
 	}
 	add_action( 'add_meta_boxes', 'custom_woo_cwd_cart_action_meta_boxes' );
 	function woo_cwd_cart_action_display_callback(){
@@ -84,6 +84,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			.abandoned{
 				background: red;
 				text-transform: uppercase;
+				color: #fff;
+				padding: 5px 10px;
 			}
 		</style>
 		<div>
@@ -91,19 +93,23 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			    <tbody>
 			        <tr>
 			            <th align="left">Cart Status:</th>
-			            <td><span class="abandoned">ABANDONED</span></td>
+			            <td><span class="abandoned"><?php echo get_post_meta($post->ID,"_cart_status")[0]; ?></span></td>
 			        </tr>
 			        <tr>
 			            <th align="left">Cart Last Update:</th>
-			            <td>2017-01-19 04:55:19am</td>
+			            <td>
+			            	<?php
+			            		echo the_modified_date("F j, Y g:i a");
+							?>
+						</td>
 			        </tr>
 			        <tr>
 			            <th align="left">User:</th>
-			            <td>abcte</td>
+			            <td><?php echo $post->post_title; ?></td>
 			        </tr>
 			        <tr>
 			            <th align="left">User email:</th>
-			            <td><a href="mailto:svenkatesan1995@gmail.com">svenkatesan1995@gmail.com</a></td>
+			            <td><a href="mailto:<?php echo get_post_meta($post->ID,'visitor_email',true); ?>"><?php echo get_post_meta($post->ID,'visitor_email',true); ?></a></td>
 			        </tr>
 			    </tbody>
 			</table>
@@ -129,7 +135,33 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 				    </tr>
 				</thead>
 				<tbody>
-					
+					<?php
+						$cart_content=get_post_meta($post->ID,'cwd_cart_content');
+						$cart_content=maybe_unserialize($cart_content[0]);
+					?>
+					<?php
+						foreach ($cart_content['cart'] as $key => $value) {
+							$_product = wc_get_product($value['product_id']);
+							?>
+							<tr>
+								<td>
+								<?php $thumbnail =  $_product->get_image(array(36,36));
+					                if(!$_product->is_visible())
+					                    echo $thumbnail;
+					                else
+					                    printf( '<a href="%s">%s</a>', $_product->get_permalink(), $thumbnail );
+					            ?>					                
+					            </td>
+								<td>
+									<a href="<?php echo $_product->get_permalink() ?>"><?php echo $_product->get_title() ?></a>
+								</td>
+								<td><?php echo $_product->get_price(); ?></td>
+								<td><?php echo $value['quantity']; ?></td>
+								<td><?php echo $value['line_total']; ?></td>
+							</tr>
+							<?php
+						}
+					?>
 				</tbody>
 			</table>
 		</div>
@@ -182,34 +214,34 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 				<h2>Carts</h2>
 				<table class="wp-list-table widefat fixed striped">
 					<thead>
-						<tr>							
+						<tr>
 							<th scope="col" id="post_title" class="manage-column column-post_title column-primary sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=post_title&amp;order=asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=post_title&amp;order=asc">
 									<span>Info</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
 							<th scope="col" id="email" class="manage-column column-email sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=email&amp;order=asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&tab=carts&orderby=visitor_email&order=asc">
 									<span>Email</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
 							<th scope="col" id="subtotal" class="manage-column column-subtotal sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=email&amp;order=asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=cart_subtotal&amp;order=asc">
 									<span>Subtotal</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
 							<th scope="col" id="status" class="manage-column column-status sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=status&amp;order=asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=_cart_status&amp;order=asc">
 									<span>Status</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
 							<th scope="col" id="status_email" class="manage-column column-status_email sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=status_email&amp;order=asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=cart_email_sent&amp;order=asc">
 									<span>Email sent</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
 							<th scope="col" id="last_update" class="manage-column column-last_update sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=last_update&amp;order=asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=last_update&amp;order=asc">
 									<span>Last update</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
@@ -218,33 +250,33 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					</thead>
 					<tfoot>
 						<tr>							
-							<th scope="col" id="post_title" class="manage-column column-post_title column-primary sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=post_title&amp;order=asc">
+							<th scope="col" id="post_title" class="manage-column column-post_title column-primary sortable asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=post_title&amp;order=desc">
 									<span>Info</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
-							<th scope="col" id="email" class="manage-column column-email sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=email&amp;order=asc">
+							<th scope="col" id="email" class="manage-column column-email sortable asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=visitor_email&amp;order=desc">
 									<span>Email</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
-							<th scope="col" id="subtotal" class="manage-column column-subtotal sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=email&amp;order=asc">
+							<th scope="col" id="subtotal" class="manage-column column-subtotal sortable asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=cart_subtotal&amp;order=desc">
 									<span>Subtotal</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
-							<th scope="col" id="status" class="manage-column column-status sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=status&amp;order=asc">
+							<th scope="col" id="status" class="manage-column column-status sortable asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=_cart_status&amp;order=desc">
 									<span>Status</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
-							<th scope="col" id="status_email" class="manage-column column-status_email sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=status_email&amp;order=asc">
+							<th scope="col" id="status_email" class="manage-column column-status_email sortable asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=cart_email_sent&amp;order=desc">
 									<span>Email sent</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
-							<th scope="col" id="last_update" class="manage-column column-last_update sortable desc">
-								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=yith_woocommerce_recover_abandoned_cart&amp;tab=carts&amp;orderby=last_update&amp;order=asc">
+							<th scope="col" id="last_update" class="manage-column column-last_update sortable asc">
+								<a href="http://localhost/abcte/wordpress/wp-admin/admin.php?page=woocommerce_cwd_recover_abandoned_cart&amp;tab=carts&amp;orderby=last_update&amp;order=desc">
 									<span>Last update</span><span class="sorting-indicator"></span>
 								</a>
 							</th>
@@ -253,40 +285,71 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					</tfoot>
 					<tbody>
 						<?php
-							$args = array('post_type' => 'woo_cwd_cart');
-							$the_query = new WP_Query( $args ); 
+							if(isset($_REQUEST['orderby']) && isset($_REQUEST['order'])){
+								if($_REQUEST['orderby']=='post_title'){
+									$args = array(
+										'post_type' => 'woo_cwd_cart',
+										'orderby' => 'post_title',
+										'order' => $_REQUEST['order'],
+									);
+								}
+								else if($_REQUEST['orderby']=='last_update'){
+									$args = array(
+										'post_type' => 'woo_cwd_cart',
+										'orderby' => 'post_date',
+										'order' => $_REQUEST['order'],
+									);
+								}
+								else{
+									$args = array(
+										'post_type' => 'woo_cwd_cart',
+										'meta_key' => $_REQUEST['orderby'],
+										'order' => $_REQUEST['order'],
+									);
+								}
+							}
+							else{
+								$args = array(
+									'post_type' => 'woo_cwd_cart'
+								);
+							}
+							$the_query = new WP_Query( $args );
 							if ( $the_query->have_posts() ) : 
 								while ( $the_query->have_posts() ) : $the_query->the_post(); 
-								?>
-									<tr>
-										<td>
-											<?php the_title(); ?>
-											<div class="row-actions">
-												<span class="cart_view">
-													<a href="post.php?post=<?php echo get_the_ID(); ?>&action=edit">View</a>
-												</span>
-											</div>
-										</td>
-										<td>
-											<?php echo get_post_meta(get_the_ID(),'visitor_email',true); ?>
-										</td>
-										<td>
-											<?php echo get_post_meta(get_the_ID(),'cart_subtotal',true); ?>
-										</td>
-										<td>
-											<?php echo get_post_meta(get_the_ID(),'cart_status',true); ?>
-										</td>
-										<td>
-											<?php echo get_post_meta(get_the_ID(),'cart_email_sent',true); ?>
-										</td>
-										<td>
-											<?php echo get_post_meta(get_the_ID(),'cart_last_update',true); ?>
-										</td>
-										<td>
-											<input type="button" class="button action" value="Send email" data-id="<?php echo get_the_ID(); ?>">
-										</td>
-									</tr>
-									<?php endwhile; ?>
+									if(get_post_meta(get_the_ID(),"_cart_status")[0]=='abandoned'){
+									?>
+										<tr>
+											<td>
+												<?php the_title(); ?>
+												<div class="row-actions">
+													<span class="cart_view">
+														<a href="post.php?post=<?php echo get_the_ID(); ?>&action=edit">View</a>
+													</span>
+												</div>
+											</td>
+											<td>
+												<?php echo get_post_meta(get_the_ID(),'visitor_email',true); ?>
+											</td>
+											<td>
+												<?php echo get_post_meta(get_the_ID(),'cart_subtotal',true); ?>
+											</td>
+											<td>
+												<?php echo get_post_meta(get_the_ID(),"_cart_status")[0]; ?>
+											</td>
+											<td>
+												<?php echo get_post_meta(get_the_ID(),'cart_email_sent',true); ?>
+											</td>
+											<td>
+												<?php echo the_modified_date("F j, Y g:i a"); ?>
+											</td>
+											<td>
+												<input type="button" class="button action" value="Send email" data-id="<?php echo get_the_ID(); ?>">
+											</td>
+										</tr>
+									<?php
+										}
+										endwhile; 
+									?>
 									<?php wp_reset_postdata(); ?>
 								<?php else : ?>
 									<tr><td colspan="7">No items found.</td></tr>
@@ -403,20 +466,227 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 	function woo_cwd_cart_update(){
 		if(is_user_logged_in()){
 			$user_id      = get_current_user_id();
-            $user_details = get_userdata($user_id);
-            $user_email   = $user_details->user_email;            
-            $post = array(
-                'post_content' => '',
-                'post_status'  => 'publish',
-                'post_title'   => $user_details->display_name,
-                'post_type'    => 'woo_cwd_cart'
-            );
-            $post_id = wp_insert_post($post);
-            //update_post_meta( $post_id, '_user_id', $user_id);
-            update_post_meta( $post_id, 'visitor_email', $user_email);
-            update_post_meta( $post_id, 'cart_email_sent', 'Not sent');
+			$has_previous_cart=has_previous_cart($user_id);
+			if( ! $has_previous_cart ){
+		        $user_details = get_userdata($user_id);
+		        $user_email   = $user_details->user_email;
+		        $post = array(
+	                'post_content' => '',
+	                'post_status'  => 'publish',
+	                'post_title'   => $user_details->display_name,
+	                'post_type'    => 'woo_cwd_cart'
+		        );
+		        $post_id = wp_insert_post($post);
+		        update_post_meta($post_id, 'visitor_email', $user_email);
+		        update_post_meta($post_id, 'cart_email_sent', 'Not sent');
+		        $subtotal = (WC()->cart->tax_display_cart == 'excl') ? WC()->cart->subtotal_ex_tax :  WC()->cart->subtotal;
+		        update_post_meta($post_id, 'cart_subtotal', $subtotal );
+		        update_post_meta( $post_id, 'cwd_user_id', $user_id);
+		    }else{
+		    	$post_id = $has_previous_cart->ID;
+                $post_updated = array(
+                    'ID' => $post_id,
+                    'post_date' => $has_previous_cart->post_date,
+                    'post_type' => 'woo_cwd_cart'
+                );
+
+                wp_update_post( $post_updated );
+		    }
+		    update_post_meta( $post_id, '_cart_status', 'open');
+		    update_post_meta( $post_id, 'cwd_cart_content', get_item_cart() );
+		    $subtotal = ( WC()->cart->tax_display_cart == 'excl' ) ? WC()->cart->subtotal_ex_tax :  WC()->cart->subtotal;
+		    update_post_meta( $post_id, 'cart_subtotal', $subtotal );
+		}else{			
+			
 		}
 	}
+	function woo_visitor_cart_updated(){
+		if(!is_user_logged_in()){
+		?>
+		<script type="text/javascript">
+			jQuery(document).ready(function(){
+				var email=jQuery('#billing_email').val();
+				if(email.length>5){
+					var pattern = new RegExp(/^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/);
+        			var validate=pattern.test(email);
+        			if(validate==true){
+        				var fname=jQuery('#billing_first_name').val();
+        				var lname=jQuery('#billing_last_name').val();
+        				jQuery.ajax({
+				         	type : "post",
+				         	dataType : "json",
+				         	url : wc_checkout_params.ajax_url,
+				         	data : {action:"create_cwd_cart_cpt_post",'email':email,'fname':fname,'lname':lname},
+				         	success: function(response) {
+				            	
+				         	}
+				      	});
+        			}
+				}
+			});
+		</script>
+		<?php
+		}
+	}
+	add_action('woocommerce_review_order_before_order_total', 'woo_visitor_cart_updated', 10);
+	add_action("wp_ajax_nopriv_create_cwd_cart_cpt_post", "create_cwd_cart_cpt_post");
+	function create_cwd_cart_cpt_post(){
+		if(!is_user_logged_in()){
+			$user_id      = get_current_user_id();
+			$user_email   = $_POST['email'];
+			$has_previous_user=has_previous_user($user_email);
+			if(!$has_previous_user){
+				if(isset($_POST['fname'])){
+					$name=$_POST['fname']." ";
+				}
+				if(isset($_POST['lname'])){
+					$name.=$_POST['lname'];
+				}
+				if(!isset($_POST['fname']) && !isset($_POST['lname'])){
+					$name=$_POST['email'];
+				}
+		        $post = array(
+	                'post_content' => '',
+	                'post_status'  => 'publish',
+	                'post_title'   => $name,
+	                'post_type'    => 'woo_cwd_cart'
+		        );
+		        $post_id = wp_insert_post($post);
+		        update_post_meta($post_id, 'visitor_email', $user_email);
+		        update_post_meta($post_id, 'cart_email_sent', 'Not sent');
+		        $subtotal = (WC()->cart->tax_display_cart == 'excl') ? WC()->cart->subtotal_ex_tax :  WC()->cart->subtotal;
+		        update_post_meta($post_id, 'cart_subtotal', $subtotal );
+		        update_post_meta( $post_id, 'cwd_user_id', $user_id);
+		    }
+		    else{
+		    	$post_id=$has_previous_user->ID;
+		    	$post_updated = array(
+                    'ID' => $post_id,
+                    'post_date' => $has_previous_cart->post_date,
+                    'post_type' => 'woo_cwd_cart'
+                );
+                wp_update_post( $post_updated );
+		    }
+		}
+		update_post_meta( $post_id, '_cart_status', 'open');
+	    update_post_meta( $post_id, 'cwd_cart_content', get_item_cart() );
+	    $subtotal = ( WC()->cart->tax_display_cart == 'excl' ) ? WC()->cart->subtotal_ex_tax :  WC()->cart->subtotal;
+	    update_post_meta( $post_id, 'cart_subtotal', $subtotal );	    
+	}
+	function has_previous_user($mail){
+		$args = array(
+            'post_type'   => 'woo_cwd_cart',
+            'meta_key'    => 'visitor_email',
+            'meta_value'  => $mail,
+            'post_status' => 'publish'
+        );
+        $r = get_posts($args);
+        if( empty($r) ){
+            return false;
+        }else{
+            return $r[0];
+        }
+	}
+	function has_previous_cart( $user_id ){
+        $args = array(
+            'post_type'   => 'woo_cwd_cart',
+            'meta_key'    => 'cwd_user_id',
+            'meta_value'  => $user_id,
+            'post_status' => 'publish'
+        );
+
+        $r = get_posts($args);
+        if( empty($r) ){
+            return false;
+        }else{
+            return $r[0];
+        }
+    }
+    function get_item_cart() {
+        if ( is_user_logged_in() ) {
+            $user_id = get_current_user_id();
+            $cart    = maybe_serialize(get_user_meta($user_id,'_woocommerce_persistent_cart', true ));
+        }
+        else {
+            $cart = maybe_serialize(array('cart'=>WC()->session->get('cart')));
+        }
+        return $cart;
+    }
+    add_action('init','update_carts');
+    function update_carts(){
+    	if(is_user_logged_in()){
+	    	$cutoff=60*get_option('woo_cwd_cart_cut_off_time');
+	        $start_to_date=(int)(time() - $cutoff);
+	        $args = array(
+	            'post_type'   => 'woo_cwd_cart',
+	            'post_status' => 'publish',
+	            'meta_value'  => 'open',
+	            'meta_key'    => '_cart_status',
+	            'date_query' => array(
+	                array(
+	                    'column' => 'post_modified_gmt',
+	                    'before'  => date("Y-m-d H:i:s", $start_to_date),
+	                )
+	            ),
+	        );
+	        $p = get_posts($args);
+	        if(!empty($p)){
+	            foreach( $p as $post ){
+	                update_status($post);
+	            }
+	        }
+	    }else{
+
+	    }
+    }
+    function update_status($cart){
+        $current_status = get_post_meta($cart->ID,'_cart_status',true);
+        $post_modified = strtotime( $cart->post_modified );
+        $current_time = time();
+        if(($current_time-$post_modified)>$cutoff){
+            if($current_status=='open'){
+            	update_post_meta($cart->ID,'_cart_status','abandoned');
+            }
+        }
+    }
+    add_action( 'woocommerce_thankyou', 'woo_cwd_cart_thank_you_page');
+    function woo_cwd_cart_thank_you_page($order){
+    	if(is_user_logged_in()){
+    		$user_id      = get_current_user_id();
+    		$args = array(
+	            'post_type'   => 'woo_cwd_cart',
+	            'meta_key'    => 'cwd_user_id',
+	            'meta_value'  => $user_id,
+	            'post_status' => 'publish'
+	        );
+
+	        $r = get_posts($args);
+	        if(empty($r)){
+	            return false;
+	        }else{
+	            foreach ($r as $k => $v) {
+	            	wp_delete_post($v->ID);
+	            }
+	        }
+    	}else{
+    		$order = new WC_Order($order);
+    		$mail=$order->billing_email;
+    		$args = array(
+	            'post_type'   => 'woo_cwd_cart',
+	            'meta_key'    => 'visitor_email',
+	            'meta_value'  => $mail,
+	            'post_status' => 'publish'
+	        );
+	        $r = get_posts($args);
+	        if(empty($r)){
+	            return false;
+	        }else{
+	            foreach ($r as $k => $v) {
+	            	wp_delete_post($v->ID);
+	            }
+	        }
+    	}
+    }
 }
 else {
 	?>
