@@ -412,10 +412,43 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 				                <?php wp_editor(get_option('woo_cwd_email_content'), "woo_cwd_email_content"); ?>
 							</td>
 				        </tr>
+				        <tr>
+				            <th scope="row">
+				                <label for="woo_cwd_email_content">Email Template</label>
+				            </th>
+				            <td>
+				                <select name="cwd_mail_template" id="cwd_mail_template">
+				                	<option value="">-- Select Template --</option>
+				                	<option value="marketing-grid">Grid</option>
+				                	<option value="marketing-list-left">Left Side List</option>
+				                	<option value="marketing-list-right">Right Side List</option>
+				                </select>
+							</td>
+				        </tr>
 				    </tbody>
-				</table>				
+				</table>
+				<div class="template_previews">
+				</div>
 				<input class="button-primary" type="submit" value="Save Changes">
         	</form>
+        	<script type="text/javascript">
+        		jQuery(document).ready(function(){
+        			jQuery("body").on("change","#cwd_mail_template",function(){
+        				if(jQuery(this).val()=='marketing-grid'){
+        					jQuery('.template_previews').html('<h4>Preview</h4><img src="<?php echo plugin_dir_url(__FILE__);?>include/img/grid.png"><br><br>');
+        				}
+        				else if(jQuery(this).val()=='marketing-list-left'){
+        					jQuery('.template_previews').html('<h4>Preview</h4><img src="<?php echo plugin_dir_url(__FILE__);?>include/img/left-side-list.png"><br><br>');
+        				}
+        				else if(jQuery(this).val()=='marketing-list-right'){
+        					jQuery('.template_previews').html('<h4>Preview</h4><img src="<?php echo plugin_dir_url(__FILE__);?>include/img/right-side-list.png"><br><br>');
+        				}
+        				else{
+        					jQuery('.template_previews').html('');
+        				}
+        			});
+        		});
+        	</script>
 			<?php
 		}
 		else{
